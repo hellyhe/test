@@ -79,7 +79,7 @@ got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *packet)
     iphdr = (struct ip *)(packet + 14);
     tcphdr = (struct tcphdr *)(packet + 14 + 20);
 
-    size_tcp = tcphdr->th_off * 4;    
+    size_tcp = tcphdr->th_off * 4;  
     size_payload = ntohs(iphdr->ip_len) - (size_ip + size_tcp);
 
     printf("-----------------------------------------\n");
@@ -149,6 +149,7 @@ got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *packet)
                 sprintf(new_payload, "%.*s %s %s", RequestMethodlen, RequestMethod, change_uri, p);
                 printf("--> new_payload: len: %d | %s\n", strlen(new_payload), new_payload);            
                 //libnet_send(ether, iphdr, tcphdr, size_payload, payload);
+                printf("LIBNET_IPV4_H:%d LIBNET_TCP_H:%d size_payload:%d\n", LIBNET_IPV4_H, LIBNET_TCP_H, strlen(new_payload));
                 libnet_send(ether, iphdr, tcphdr, strlen(new_payload), new_payload);
             }
             else
@@ -189,6 +190,7 @@ libnet_send(struct ether_header *ether, struct ip *iphdr, struct tcphdr *tcphdr,
     //payload_s = strlen(payload); /* 计算负载内容的长度 */
 
 #if 0
+
     /* 构建TCP的选项,通常在第一个TCP通信报文中设置MSS */
     tcp_op_tag = libnet_build_tcp_options(
                 payload,
@@ -196,11 +198,19 @@ libnet_send(struct ether_header *ether, struct ip *iphdr, struct tcphdr *tcphdr,
                 handle,
                 0
     );
+    #endif
+    
+	u_int8_t *options = (char*)payload + 54;
+    int options_s = tcphdr->th_off * 4  -  TCP_HEADER_SIZE;
+	tcp_op_tag = libnet_build_tcp_options((u_int8_t*)options, options_s,  handle, 0); 
+    
     if (tcp_op_tag == -1) {
         printf("build_tcp_options failure\n");
         return (-2);
     };
-#endif
+
+
+
     tcp_tag = libnet_build_tcp(
                 ntohs(tcphdr->th_sport),  /* 源端口 */
                 ntohs(tcphdr->th_dport),  /* 目的端口 */
