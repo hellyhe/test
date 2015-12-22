@@ -167,7 +167,7 @@ got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *packet)
 int
 libnet_send(struct ether_header *ether, struct ip *iphdr, struct tcphdr *tcphdr, int size_payload, const u_char *payload)
 {
-    char *dev = "enp0s8";
+    char *dev = "eth0";
     libnet_t *handle; /* Libnet句柄 */
     int packet_size; /* 构造的数据包大小 */
 
@@ -190,7 +190,6 @@ libnet_send(struct ether_header *ether, struct ip *iphdr, struct tcphdr *tcphdr,
     //payload_s = strlen(payload); /* 计算负载内容的长度 */
 
 #if 0
-
     /* 构建TCP的选项,通常在第一个TCP通信报文中设置MSS */
     tcp_op_tag = libnet_build_tcp_options(
                 payload,
@@ -198,19 +197,24 @@ libnet_send(struct ether_header *ether, struct ip *iphdr, struct tcphdr *tcphdr,
                 handle,
                 0
     );
-    #endif
-    
+      
 	u_int8_t *options = (char*)payload + 54;
     int options_s = tcphdr->th_off * 4  -  TCP_HEADER_SIZE;
-	tcp_op_tag = libnet_build_tcp_options((u_int8_t*)options, options_s,  handle, 0); 
+	tcp_op_tag = libnet_build_tcp_options((u_int8_t*)options, options_s,  handle, 0);
+
+    
+    tcp_op_tag = libnet_build_tcp_options(
+           (uint8_t*)"\003\003\012\001\002\004\001\011\010\012\077\077\077\077\000\000\000\000\000\000",
+           20,
+           handle,
+           0); 
     
     if (tcp_op_tag == -1) {
         printf("build_tcp_options failure\n");
         return (-2);
     };
-
-
-
+ #endif
+    
     tcp_tag = libnet_build_tcp(
                 ntohs(tcphdr->th_sport),  /* 源端口 */
                 ntohs(tcphdr->th_dport),  /* 目的端口 */
@@ -280,7 +284,7 @@ int main(int argc, char **argv)
     pcap_t *handle;        /* packet capture handle */
 
     //char filter_exp[] = "dst 202.114.85.31 and tcp";   
-    char filter_exp[] = "host 192.168.56.1 and tcp";    /* filter expression [3] */
+    char filter_exp[] = "host 192.168.1.103 and tcp";    /* filter expression [3] */
     struct bpf_program fp;        /* compiled filter program (expression) */
     bpf_u_int32 mask;        /* subnet mask */
     bpf_u_int32 net;        /* ip */
