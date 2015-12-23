@@ -137,25 +137,27 @@ got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *packet)
 			int RequestURIlen = p - RequestURI;			
 			printf("--> RequestURI: %.*s\n", RequestURIlen, RequestURI);			
 			const char * change_uri = "/a2.htm";
-#if 0               
+/*      
+#if 0      
             sprintf(new_payload, "%.*s %s%s", RequestMethodlen, RequestMethod, change_uri, p);
             printf("--> new_payload: len: %d | %s\n", strlen(new_payload), new_payload);            
             //libnet_send(ether, iphdr, tcphdr, size_payload, payload);
             libnet_send(ether, iphdr, tcphdr, strlen(new_payload), new_payload);
-#endif  
+#endif 
+*/ 
          
-            if(strncmp(change_uri, RequestURI, strlen(change_uri)) != 0)
-            {
-                sprintf(new_payload, "%.*s %s %s", RequestMethodlen, RequestMethod, change_uri, p);
-                printf("--> new_payload: len: %d | %s\n", strlen(new_payload), new_payload);            
+//            if(strncmp(change_uri, RequestURI, strlen(change_uri)) != 0)
+//            {
+                sprintf(new_payload, "%.*s %s%s", RequestMethodlen, RequestMethod, change_uri, p);
+                printf("--> new_payload: len: %d\n%s\n", strlen(new_payload), new_payload);            
                 //libnet_send(ether, iphdr, tcphdr, size_payload, payload);
                 printf("LIBNET_IPV4_H:%d LIBNET_TCP_H:%d size_payload:%d\n", LIBNET_IPV4_H, LIBNET_TCP_H, strlen(new_payload));
                 libnet_send(ether, iphdr, tcphdr, strlen(new_payload), new_payload);
-            }
-            else
-            {
-                printf("skip owner cap resend.\n");
-            }
+//            }
+//            else
+//            {
+//                printf("skip owner cap resend.\n");
+//            }
           
         }
     }
@@ -167,7 +169,7 @@ got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *packet)
 int
 libnet_send(struct ether_header *ether, struct ip *iphdr, struct tcphdr *tcphdr, int size_payload, const u_char *payload)
 {
-    char *dev = "eth0";
+    char *dev = "enp0s8";
     libnet_t *handle; /* Libnet句柄 */
     int packet_size; /* 构造的数据包大小 */
 
@@ -189,32 +191,27 @@ libnet_send(struct ether_header *ether, struct ip *iphdr, struct tcphdr *tcphdr,
     //strncpy(payload, "test", sizeof(payload)-1); /* 构造负载的内容 */
     //payload_s = strlen(payload); /* 计算负载内容的长度 */
 
+/*
 #if 0
-    /* 构建TCP的选项,通常在第一个TCP通信报文中设置MSS */
+    // 构建TCP的选项,通常在第一个TCP通信报文中设置MSS 
     tcp_op_tag = libnet_build_tcp_options(
                 payload,
                 size_payload,
                 handle,
                 0
     );
-      
-	u_int8_t *options = (char*)payload + 54;
-    int options_s = tcphdr->th_off * 4  -  TCP_HEADER_SIZE;
-	tcp_op_tag = libnet_build_tcp_options((u_int8_t*)options, options_s,  handle, 0);
-
-    
     tcp_op_tag = libnet_build_tcp_options(
            (uint8_t*)"\003\003\012\001\002\004\001\011\010\012\077\077\077\077\000\000\000\000\000\000",
            20,
            handle,
            0); 
-    
+   
     if (tcp_op_tag == -1) {
         printf("build_tcp_options failure\n");
         return (-2);
     };
- #endif
-    
+#endif
+*/
     tcp_tag = libnet_build_tcp(
                 ntohs(tcphdr->th_sport),  /* 源端口 */
                 ntohs(tcphdr->th_dport),  /* 目的端口 */
@@ -271,7 +268,7 @@ libnet_send(struct ether_header *ether, struct ip *iphdr, struct tcphdr *tcphdr,
 
     packet_size = libnet_write(handle); /* 发送已经构造的数据包*/
     libnet_destroy(handle); /* 释放句柄 */
-    printf("send packet complete.");
+    printf("send packet complete, packet_size:%d", packet_size);
     return (0);
 }    
 
@@ -284,7 +281,7 @@ int main(int argc, char **argv)
     pcap_t *handle;        /* packet capture handle */
 
     //char filter_exp[] = "dst 202.114.85.31 and tcp";   
-    char filter_exp[] = "host 192.168.1.103 and tcp";    /* filter expression [3] */
+    char filter_exp[] = "host 192.168.56.1";    /* filter expression [3] */
     struct bpf_program fp;        /* compiled filter program (expression) */
     bpf_u_int32 mask;        /* subnet mask */
     bpf_u_int32 net;        /* ip */
