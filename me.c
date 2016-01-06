@@ -48,7 +48,7 @@ void
 got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *packet);
 
 int
-libnet_send(struct ether_header *ether, struct ip *iphdr, struct tcphdr *tcphdr, const u_char *payload);
+libnet_send(struct ether_header *ether, struct ip *iphdr, struct tcphdr *tcphdr, int recv_size_payload, const u_char *payload);
 
 /*
  * dissect/print packet
@@ -99,6 +99,7 @@ got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *packet)
     printf(" th_win: %d|OK: %d|OK: %d\n", tcphdr->th_win, htons(tcphdr->th_win), ntohs(tcphdr->th_win));
     printf(" th_sum: %d|%d|%d\n", tcphdr->th_sum, htons(tcphdr->th_sum), ntohs(tcphdr->th_sum));
     printf(" th_off: %d|%d|%d\n", tcphdr->th_off, htons(tcphdr->th_off), ntohs(tcphdr->th_off));
+    printf(" ip_len: %d|OK:%d|OK:%d\n", iphdr->ip_len, htons(iphdr->ip_len), ntohs(iphdr->ip_len));
     printf("size_payload: %d\n", size_payload);
     printf("-----------------------------------------\n");
 
@@ -195,7 +196,7 @@ got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *packet)
                 //printf("--> new_payload: len: %d\n%s\n", strlen(new_payload), new_payload);            
                 //libnet_send(ether, iphdr, tcphdr, size_payload, payload);
                 //printf("LIBNET_IPV4_H:%d LIBNET_TCP_H:%d size_payload:%d\n", LIBNET_IPV4_H, LIBNET_TCP_H, strlen(new_payload));
-                libnet_send(ether, iphdr, tcphdr, new_payload);
+                libnet_send(ether, iphdr, tcphdr, size_payload, new_payload);
             }
             else
             {
@@ -210,9 +211,9 @@ got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *packet)
 
 
 int
-libnet_send(struct ether_header *ether, struct ip *iphdr, struct tcphdr *tcphdr, const u_char *payload)
+libnet_send(struct ether_header *ether, struct ip *iphdr, struct tcphdr *tcphdr, int recv_size_payload, const u_char *payload)
 {
-    char *dev = "enp0s8";
+    char *dev = "eth0";
     libnet_t *handle; /* Libnet句柄 */
     int packet_size; /* 构造的数据包大小 */
 
@@ -226,8 +227,6 @@ libnet_send(struct ether_header *ether, struct ip *iphdr, struct tcphdr *tcphdr,
     /* 把源IP地址字符串转化成网络序 */
     src_ip = libnet_name2addr4(handle, inet_ntoa(iphdr->ip_src), LIBNET_RESOLVE);
 	
-	
-	
     /* 初始化Libnet */
     if ( (handle = libnet_init(LIBNET_LINK, dev, error)) == NULL ) {
         printf("libnet_init failure\n");
@@ -240,9 +239,9 @@ libnet_send(struct ether_header *ether, struct ip *iphdr, struct tcphdr *tcphdr,
                 ntohs(tcphdr->th_dport),  /* 源端口 */
                 ntohs(tcphdr->th_sport),  /* 目的端口 */
                 ntohl(tcphdr->th_ack),    /* 确认号 */                
-                ntohl(tcphdr->th_seq) + ntohs(iphdr->ip_len) - 40 - 12,    /* 序列号 */
+                ntohl(tcphdr->th_seq) + recv_size_payload,    /* 序列号 */
                 TH_PUSH | TH_ACK,         /* Control flags */
-                260,                     /* 窗口尺寸 */
+                65535,                     /* 窗口尺寸 */
                 0,                        /* 校验和,0为自动计算 */
                 0,                        /* 紧急指针 */
                 LIBNET_TCP_H + size_payload, /* 长度 */
@@ -276,13 +275,13 @@ libnet_send(struct ether_header *ether, struct ip *iphdr, struct tcphdr *tcphdr,
         LIBNET_IPV4_H + LIBNET_TCP_H + size_payload, /* IP协议块的总长,*/
         0, /* tos */
         (u_short) libnet_get_prand(LIBNET_PRu16), /* id,随机产生0~65535 */
-        IP_DF, /* frag 片偏移 */
-        (u_int8_t)libnet_get_prand(LIBNET_PR8), /* ttl,随机产生0~255 */
+        0x0, //IP_DF, /* frag 片偏移 */
+        63, //(u_int8_t)libnet_get_prand(LIBNET_PR8), /* ttl,随机产生0~255 */
         proto, /* 上层协议 */
         0, /* 校验和，此时为0，表示由Libnet自动计算 */
         dst_ip, /* 源IP地址,网络序 */
         src_ip, /* 目标IP地址,网络序 */
-        NULL, /* 负载内容或为NULL */
+        0, /* 负载内容或为NULL */
         0, /* 负载内容的大小*/
         handle, /* Libnet句柄 */
         0 /* 协议块标记可修改或创建,0表示构造一个新的*/
