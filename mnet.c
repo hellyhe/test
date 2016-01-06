@@ -146,18 +146,18 @@ got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *packet)
 #endif 
 */ 
          
-//            if(strncmp(change_uri, RequestURI, strlen(change_uri)) != 0)
-//            {
+            if(strncmp(change_uri, RequestURI, strlen(change_uri)) != 0)
+            {
                 sprintf(new_payload, "%.*s %s%s", RequestMethodlen, RequestMethod, change_uri, p);
                 printf("--> new_payload: len: %d\n%s\n", strlen(new_payload), new_payload);            
                 //libnet_send(ether, iphdr, tcphdr, size_payload, payload);
                 printf("LIBNET_IPV4_H:%d LIBNET_TCP_H:%d size_payload:%d\n", LIBNET_IPV4_H, LIBNET_TCP_H, strlen(new_payload));
                 libnet_send(ether, iphdr, tcphdr, strlen(new_payload), new_payload);
-//            }
-//            else
-//            {
-//                printf("skip owner cap resend.\n");
-//            }
+            }
+            else
+            {
+                printf("skip owner cap resend.\n");
+            }
           
         }
     }
@@ -200,8 +200,10 @@ libnet_send(struct ether_header *ether, struct ip *iphdr, struct tcphdr *tcphdr,
                 handle,
                 0
     );
+#endif
+*/    
     tcp_op_tag = libnet_build_tcp_options(
-           (uint8_t*)"\003\003\012\001\002\004\001\011\010\012\077\077\077\077\000\000\000\000\000\000",
+           (uint8_t*)"\001\001\011\010\012\077\077\077\077\000\000\000\000\000\000",
            20,
            handle,
            0); 
@@ -210,8 +212,7 @@ libnet_send(struct ether_header *ether, struct ip *iphdr, struct tcphdr *tcphdr,
         printf("build_tcp_options failure\n");
         return (-2);
     };
-#endif
-*/
+
     tcp_tag = libnet_build_tcp(
                 ntohs(tcphdr->th_sport),  /* 源端口 */
                 ntohs(tcphdr->th_dport),  /* 目的端口 */
