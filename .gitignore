@@ -1,0 +1,9 @@
+bin/*
+cap/*
+*.pydevproject  
+*.project  
+*.settings  
+*.pyc  
+*.swp  
+*.swo  
+*.~
