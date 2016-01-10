@@ -13,71 +13,147 @@
 test.c文件：
 */
 
-#include<stdio.h>
-#include<string.h>
-#include<libxml/parser.h>
-#include<libxml/tree.h>
-int parse_xml_file(char *buf,int len){
-        xmlDocPtr doc;
-        xmlNodePtr root,node,detail;
-        xmlChar *name,*value;
-        doc=xmlParseMemory(buf,len);    //parse xml in memory
-        if(doc==NULL){
-                printf("doc == null\n");
-                return -1;
-        }
-        root=xmlDocGetRootElement(doc);
-        for(node=root->children;node;node=node->next){
-                if(xmlStrcasecmp(node->name,BAD_CAST"content")==0)
-                        break;
-        }
-        if(node==NULL){
-                printf("no node = content\n");
-                return -1;
-        }
-        for(node=node->children;node;node=node->next){
-                if(xmlStrcasecmp(node->name,BAD_CAST"pro")==0){         //get pro node
-                        name=xmlGetProp(node,BAD_CAST"id");    
-                        value=xmlNodeGetContent(node);
-                        printf("this is %s:\n%s\n",(char*)name,(char*)value);   //get value, CDATA is not parse and don't take into value
-                        xmlFree(name);
-                        xmlFree(value);
-                }else if(xmlStrcasecmp(node->name,BAD_CAST"details")==0){       //get details node
-                        for(detail=node->children;detail;detail=detail->next){  //traverse detail node
-                                if(xmlStrcasecmp(detail->name,BAD_CAST"detail")==0){
-                                        name=xmlGetProp(detail,BAD_CAST"name");
-                                        value=xmlNodeGetContent(detail);
-                                        if(strlen((char*)value)!=0){
-                                                printf("%s : %s\n",(char*)name,(char*)value);                                      
-                                         }else{
-                                                printf("%s has no value\n",(char*)name);
-                                        }
-                                        xmlFree(name);
-                                        xmlFree(value);
-                                }
-                        }
+#include <stdio.h>
+#include <string.h>
+#include <libxml/parser.h>
+#include <libxml/tree.h>
+#include <libxml/parser.h>
+
+int main(int argc, char* argv[])
+{
+    xmlDocPtr doc;           //定义解析文档指针
+    xmlNodePtr curNode;      //定义结点指针(你需要它为了在各个结点间移动) 
+    xmlChar *szKey;          //临时字符串变量
+    char *szDocName;
+    xmlChar *name,*value;
+
+    if (argc <= 1) 
+    {
+       printf("Usage: %s docname\n", argv[0]);
+       return(0);
+    }
+
+    szDocName = argv[1];
+    doc = xmlReadFile(szDocName,"GB2312",XML_PARSE_RECOVER); //解析文件
+    //检查解析文档是否成功，如果不成功，libxml将指一个注册的错误并停止。
+    //一个常见错误是不适当的编码。XML标准文档除了用UTF-8或UTF-16外还可用其它编码保存。
+    //如果文档是这样，libxml将自动地为你转换到UTF-8。更多关于XML编码信息包含在XML标准中.
+
+    if (NULL == doc) 
+    {  
+       fprintf(stderr,"Document not parsed successfully.\n");     
+       return -1; 
+    } 
+    curNode = xmlDocGetRootElement(doc); //确定文档根元素
+    /*检查确认当前文档中包含内容*/ 
+    if (NULL == curNode)
+    { 
+       fprintf(stderr,"empty document\n");
+       xmlFreeDoc(doc); 
+       return -1; 
+    } 
+
+    /*在这个例子中，我们需要确认文档是正确的类型。“root”是在这个示例中使用文档的根类型。*/
+    if (xmlStrcmp(curNode->name, BAD_CAST "config")) 
+    {
+       fprintf(stderr,"document of the wrong type, config node != config"); 
+       xmlFreeDoc(doc); 
+       return -1; 
+    } else {
+        name = xmlGetProp(curNode, BAD_CAST"threads");
+        printf("%s->%s\n", "threads", (char*)name);
+        //get value, CDATA is not parse and don't take into value
+        xmlFree(name);
+        
+        name = xmlGetProp(curNode, BAD_CAST"nodes");
+        printf("%s->%s\n", "nodes", (char*)name);  
+        xmlFree(name);
+        
+        name = xmlGetProp(curNode, BAD_CAST"filter");
+        printf("%s->%s\n","filter",(char*)name);  
+        xmlFree(name);
+        
+        name = xmlGetProp(curNode, BAD_CAST"cpucore");
+        printf("%s->%s\n","cpucore", (char*)name);
+        xmlFree(name);
+    }
+    
+    curNode = curNode->xmlChildrenNode;
+    xmlNodePtr propNodePtr = curNode;
+    while(curNode != NULL) 
+    {      
+        printf("%s -> %s\n","curNode.name", (char*)curNode->name); 
+        if (!xmlStrcmp(curNode->name, BAD_CAST "dev")) 
+        {
+            name = xmlGetProp(curNode, BAD_CAST"send_name");
+            printf("%s->%s\n", "send_name", (char*)name);   //get value, CDATA is not parse and don't take into value
+            xmlFree(name);
+            
+            name = xmlGetProp(curNode, BAD_CAST"send_mac");
+            printf("%s->%s\n", "send_mac", (char*)name);   //get value, CDATA is not parse and don't take into value
+            xmlFree(name);
+            
+        } else if (!xmlStrcmp(curNode->name, BAD_CAST "task")) {
+            
+            name = xmlGetProp(curNode, BAD_CAST"host");
+            printf("%s->%s\n", "host", (char*)name);   //get value, CDATA is not parse and don't take into value
+            xmlFree(name);
+            
+            name = xmlGetProp(curNode, BAD_CAST"iptaskexpire");
+            printf("%s->%s\n", "iptaskexpire", (char*)name);   //get value, CDATA is not parse and don't take into value
+            xmlFree(name);
+            
+            xmlNodePtr subcurNode = curNode->xmlChildrenNode;
+            while(subcurNode != NULL) 
+            {
+                if (!xmlStrcmp(subcurNode->name, BAD_CAST "white_uri")) 
+                {
+                    name = xmlGetProp(subcurNode, BAD_CAST"uri");
+                    printf("%s->%s\n", "uri", (char*)name);   //get value, CDATA is not parse and don't take into value
+                    xmlFree(name);
+                    
+                    name = xmlGetProp(subcurNode, BAD_CAST"percent");
+                    printf("%s->%s\n", "percent", (char*)name);   //get value, CDATA is not parse and don't take into value
+                    xmlFree(name);
                 }
+                if (!xmlStrcmp(subcurNode->name, BAD_CAST "src_addr")) 
+                {   
+                    name = xmlGetProp(subcurNode, BAD_CAST"url_regex");
+                    printf("%s->%s\n", "url_regex", (char*)name);   //get value, CDATA is not parse and don't take into value
+                    xmlFree(name);
+                }
+                if (!xmlStrcmp(subcurNode->name, BAD_CAST "dst_addr")) 
+                {    
+                    name = xmlGetProp(subcurNode, BAD_CAST"url");
+                    printf("%s->%s\n", "url", (char*)name);   //get value, CDATA is not parse and don't take into value
+                    xmlFree(name); 
+                    
+                    name = xmlGetProp(subcurNode, BAD_CAST"percent");
+                    printf("%s->%s\n", "percent", (char*)name);   //get value, CDATA is not parse and don't take into value
+                    xmlFree(name);
+                    
+                }
+                subcurNode = subcurNode->next;  
+                
+            }
+            
         }
-        xmlFreeDoc(doc);
-        return 0;
-}
-int main(void){
-        char *content;
-        unsigned long filesize;
-        FILE *file;
-        if((file=fopen("testxml","r"))==NULL){
-                perror("openf file error");
-        }
-        fseek(file,0,SEEK_END);
-        filesize=ftell(file);
-        rewind(file);
-        content=(char *)malloc(filesize+1);
-        memset(content,0,filesize+1);
-        fread(content,1,filesize,file);
-        fclose(file);
-        printf("content:\n%s\n",content);
-        if(parse_xml_file(content,filesize)<0){
-                perror("parse xml failed");
-        }
-        return 0;
+        curNode = curNode->next;       
+    } 
+/*
+    //查找属性
+    xmlAttrPtr attrPtr = propNodePtr->properties;
+    while (attrPtr != NULL)
+    {
+       if (!xmlStrcmp(attrPtr->name, BAD_CAST "attribute"))
+       {
+           xmlChar* szAttr = xmlGetProp(propNodePtr,BAD_CAST "attribute");
+           printf("get attribute = %s\n", szAttr);
+           xmlFree(szAttr);
+       }
+       attrPtr = attrPtr->next;
+    }
+    */
+    xmlFreeDoc(doc);
+    return 0;
 }

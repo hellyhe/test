@@ -1,6 +1,9 @@
 CFLAGS  += `pkg-config --cflags glib-2.0`
 LDFLAGS += `pkg-config --libs glib-2.0`
 
+#  gcc -lxml2 parse1.c -o bin/xml -I/usr/include/libxml2/ -lxml2
+# C_INCLUDE_PATH=/usr/include/libxml2/ 在当前session中有效
+
 # 可执行文件
 TARGET = net302
 # 依赖目标
