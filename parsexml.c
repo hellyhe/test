@@ -18,23 +18,17 @@ test.c文件：
 #include <libxml/parser.h>
 #include <libxml/tree.h>
 #include <libxml/parser.h>
+#include "parsexml.h"
 
-int main(int argc, char* argv[])
-{
+
+void getconfig(u_char *xmlfile)
+{    
     xmlDocPtr doc;           //定义解析文档指针
     xmlNodePtr curNode;      //定义结点指针(你需要它为了在各个结点间移动) 
     xmlChar *szKey;          //临时字符串变量
-    char *szDocName;
     xmlChar *name,*value;
 
-    if (argc <= 1) 
-    {
-       printf("Usage: %s docname\n", argv[0]);
-       return(0);
-    }
-
-    szDocName = argv[1];
-    doc = xmlReadFile(szDocName,"GB2312",XML_PARSE_RECOVER); //解析文件
+    doc = xmlReadFile(xmlfile,"GB2312",XML_PARSE_RECOVER); //解析文件
     //检查解析文档是否成功，如果不成功，libxml将指一个注册的错误并停止。
     //一个常见错误是不适当的编码。XML标准文档除了用UTF-8或UTF-16外还可用其它编码保存。
     //如果文档是这样，libxml将自动地为你转换到UTF-8。更多关于XML编码信息包含在XML标准中.
