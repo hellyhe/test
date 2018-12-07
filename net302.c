@@ -17,7 +17,7 @@
 #include <time.h>
 #include <libnet.h>
 
-#include <glib/glib.h>
+#include <glib-2.0/glib.h>
 #include <gio/gio.h>
 #include <gmodule.h>
 #include <glib/gi18n.h>

@@ -5,9 +5,9 @@ LDFLAGS += `pkg-config --libs glib-2.0`
 # C_INCLUDE_PATH=/usr/include/libxml2/ 在当前session中有效
 
 # 可执行文件
-TARGET = net302
+TARGET = me
 # 依赖目标
-SRCS = net302.c
+SRCS = mnet.c
 
 OBJS = $(SRCS:.c=.o)
 
@@ -18,7 +18,7 @@ CFLAGS += -Wall -std=gnu99 -lpcap -lnet -g
 $(TARGET):$(OBJS)
 # @echo TARGET:$@
 # @echo OBJECTS:$^
-	$(CC) -o $@ $^
+	$(CC) $(CFLAGS) -o $@ $^
 
 clean:
 	rm -rf $(TARGET) $(OBJS)
